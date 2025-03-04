@@ -1,9 +1,11 @@
-"use client"
+"use client";
+
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { login, signup } from './actions';
+import OneTapComponent from "./googleauth";
 
 export default function LoginPage() {
   const handleLogin = async (formData: FormData) => {
@@ -39,6 +41,7 @@ export default function LoginPage() {
           <Button type="submit" form="loginForm">
             Log in
           </Button>
+
           <Button
             variant="outline"
             onClick={async () => {
@@ -49,6 +52,12 @@ export default function LoginPage() {
           >
             Sign up
           </Button>
+
+          {/* Add Google One Tap Component */}
+          <div className="w-full flex items-center justify-center">
+            <OneTapComponent />
+          </div>
+
         </CardFooter>
       </Card>
     </div>
