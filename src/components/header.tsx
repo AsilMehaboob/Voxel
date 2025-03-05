@@ -2,13 +2,14 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { LogOut, Menu, User } from "lucide-react"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { logout } from "@/app/login/actions"
 
 export default function Header() {
   return (
     <header className="border-b">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <Link href="/" className="text-2xl font-bold">
-          MovieTix
+          Voxel
         </Link>
         <nav className="hidden md:flex items-center gap-6">
           <Link href="/" className="text-sm font-medium hover:underline">
@@ -29,7 +30,7 @@ export default function Header() {
             <User className="h-4 w-4" />
             <span className="sr-only">User account</span>
           </Button>
-          <Button variant="outline" size="icon" className="hidden md:flex">
+          <Button variant="outline" size="icon" className="hidden md:flex" onClick={logout} >
             <LogOut className="h-4 w-4" />
             <span className="sr-only">Log out</span>
           </Button>
