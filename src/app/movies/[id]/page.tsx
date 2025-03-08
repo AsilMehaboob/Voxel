@@ -1,113 +1,81 @@
-import Link from "next/link"
-import Image from "next/image"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import Link from "next/link";
+import Image from "next/image";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { supabase } from "@/lib/supabaseClient";
+import { Movie, Theater, Showtime } from "@/types/types"; // Adjust the path as needed
+import { Metadata } from "next";
 
-// Sample movie data - in a real app, this would come from an API or database
-const movies = [
-  {
-    id: 1,
-    title: "Interstellar",
-    genre: "Sci-Fi",
-    duration: "2h 49m",
-    rating: "PG-13",
-    image: "/placeholder.svg?height=400&width=300",
-    description: "A team of explorers travel through a wormhole in space in an attempt to ensure humanity's survival.",
-    director: "Christopher Nolan",
-    cast: ["Matthew McConaughey", "Anne Hathaway", "Jessica Chastain"],
-  },
-  {
-    id: 2,
-    title: "The Dark Knight",
-    genre: "Action",
-    duration: "2h 32m",
-    rating: "PG-13",
-    image: "/placeholder.svg?height=400&width=300",
-    description:
-      "When the menace known as the Joker wreaks havoc and chaos on the people of Gotham, Batman must accept one of the greatest psychological and physical tests of his ability to fight injustice.",
-    director: "Christopher Nolan",
-    cast: ["Christian Bale", "Heath Ledger", "Aaron Eckhart"],
-  },
-  {
-    id: 3,
-    title: "Inception",
-    genre: "Sci-Fi",
-    duration: "2h 28m",
-    rating: "PG-13",
-    image: "/placeholder.svg?height=400&width=300",
-    description:
-      "A thief who steals corporate secrets through the use of dream-sharing technology is given the inverse task of planting an idea into the mind of a C.E.O.",
-    director: "Christopher Nolan",
-    cast: ["Leonardo DiCaprio", "Joseph Gordon-Levitt", "Ellen Page"],
-  },
-  {
-    id: 4,
-    title: "Pulp Fiction",
-    genre: "Crime",
-    duration: "2h 34m",
-    rating: "R",
-    image: "/placeholder.svg?height=400&width=300",
-    description:
-      "The lives of two mob hitmen, a boxer, a gangster and his wife, and a pair of diner bandits intertwine in four tales of violence and redemption.",
-    director: "Quentin Tarantino",
-    cast: ["John Travolta", "Uma Thurman", "Samuel L. Jackson"],
-  },
-  {
-    id: 5,
-    title: "The Shawshank Redemption",
-    genre: "Drama",
-    duration: "2h 22m",
-    rating: "R",
-    image: "/placeholder.svg?height=400&width=300",
-    description:
-      "Two imprisoned men bond over a number of years, finding solace and eventual redemption through acts of common decency.",
-    director: "Frank Darabont",
-    cast: ["Tim Robbins", "Morgan Freeman", "Bob Gunton"],
-  },
-  {
-    id: 6,
-    title: "The Godfather",
-    genre: "Crime",
-    duration: "2h 55m",
-    rating: "R",
-    image: "/placeholder.svg?height=400&width=300",
-    description:
-      "The aging patriarch of an organized crime dynasty transfers control of his clandestine empire to his reluctant son.",
-    director: "Francis Ford Coppola",
-    cast: ["Marlon Brando", "Al Pacino", "James Caan"],
-  },
-]
+interface PageProps {
+  params: {
+    id: string;
+  };
+}
 
-// Sample theaters and showtimes data
-const theaters = [
-  {
-    id: 1,
-    name: "Cineplex Downtown",
-    location: "123 Main St, Downtown",
-    showtimes: ["10:00 AM", "1:30 PM", "4:45 PM", "8:00 PM", "10:30 PM"],
-  },
-  {
-    id: 2,
-    name: "MovieMax Central",
-    location: "456 Park Ave, Central District",
-    showtimes: ["11:15 AM", "2:00 PM", "5:30 PM", "9:15 PM"],
-  },
-  {
-    id: 3,
-    name: "Star Cinemas",
-    location: "789 Broadway, Uptown",
-    showtimes: ["10:30 AM", "1:00 PM", "3:45 PM", "6:30 PM", "9:00 PM"],
-  },
-]
+// Helper function to format time
+const formatTime = (time: string) => {
+  const [hours, minutes] = time.split(":");
+  const hour = parseInt(hours, 10);
+  const period = hour >= 12 ? "PM" : "AM";
+  const formattedHour = hour % 12 || 12; // Convert to 12-hour format
+  return `${formattedHour}:${minutes} ${period}`;
+};
 
-export default function MovieDetail({ params }: { params: { id: string } }) {
-  const movieId = Number.parseInt(params.id)
-  const movie = movies.find((m) => m.id === movieId)
+// Generate dynamic metadata
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  return {
+    title: `Movie ${params.id}`,
+    description: `Details for movie with ID ${params.id}`,
+  };
+}
 
-  if (!movie) {
-    return <div className="container mx-auto py-8 px-4 text-center">Movie not found</div>
+export default async function MovieDetail({ params }: PageProps) {
+  const movieId = Number.parseInt(params.id);
+
+  // Fetch movie data from Supabase
+  const { data: movie, error: movieError } = await supabase
+    .from("movies")
+    .select("*")
+    .eq("id", movieId)
+    .single();
+
+  // Fetch theaters data from Supabase
+  const { data: theaters, error: theaterError } = await supabase
+    .from("theaters")
+    .select("*");
+
+  // Fetch showtimes data from Supabase
+  const { data: showtimes, error: showtimeError } = await supabase
+    .from("showtimes")
+    .select("*")
+    .eq("movie_id", movieId);
+
+  if (movieError || !movie) {
+    return <div className="container mx-auto py-8 px-4 text-center">Movie not found</div>;
   }
+
+  if (theaterError || !theaters) {
+    console.error("Error fetching theaters:", theaterError);
+    return <div className="container mx-auto py-8 px-4 text-center">Failed to load theaters.</div>;
+  }
+
+  if (showtimeError || !showtimes) {
+    console.error("Error fetching showtimes:", showtimeError);
+    return <div className="container mx-auto py-8 px-4 text-center">Failed to load showtimes.</div>;
+  }
+
+  // Map showtimes to theaters
+  const theatersWithShowtimes = theaters.map((theater) => {
+    const theaterShowtimes = showtimes
+      .filter((showtime) => showtime.theater_id === theater.id)
+      .map((showtime) => formatTime(showtime.show_time)); // Format the time
+
+    return {
+      ...theater,
+      showtimes: theaterShowtimes,
+    };
+  });
 
   return (
     <main className="container mx-auto py-8 px-4">
@@ -141,22 +109,26 @@ export default function MovieDetail({ params }: { params: { id: string } }) {
               <TabsTrigger value="dayafter">Day After</TabsTrigger>
             </TabsList>
             <TabsContent value="today" className="space-y-6">
-              {theaters.map((theater) => (
+              {theatersWithShowtimes.map((theater) => (
                 <Card key={theater.id}>
                   <CardContent className="p-6">
                     <h3 className="text-xl font-bold mb-2">{theater.name}</h3>
                     <p className="text-sm text-muted-foreground mb-4">{theater.location}</p>
                     <div className="flex flex-wrap gap-2">
-                      {theater.showtimes.map((time, index) => (
-                        <Link
-                          href={`/movies/${movie.id}/booking?theater=${theater.id}&time=${encodeURIComponent(time)}`}
-                          key={index}
-                        >
-                          <Button variant="outline" size="sm">
-                            {time}
-                          </Button>
-                        </Link>
-                      ))}
+                      {theater.showtimes.length > 0 ? (
+                        theater.showtimes.map((time: string, index: number) => (
+                          <Link
+                            href={`/movies/${movie.id}/booking?theater=${theater.id}&time=${encodeURIComponent(time)}`}
+                            key={index}
+                          >
+                            <Button variant="outline" size="sm">
+                              {time}
+                            </Button>
+                          </Link>
+                        ))
+                      ) : (
+                        <p className="text-muted-foreground">No showtimes available.</p>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -176,6 +148,5 @@ export default function MovieDetail({ params }: { params: { id: string } }) {
         </div>
       </div>
     </main>
-  )
+  );
 }
-
