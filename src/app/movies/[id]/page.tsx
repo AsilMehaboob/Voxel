@@ -4,48 +4,38 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/lib/supabaseClient";
-import { Movie, Theater, Showtime } from "@/types/types"; // Adjust the path as needed
-import { Metadata } from "next";
-
-interface PageProps {
-  params: {
-    id: string;
-  };
-}
 
 // Helper function to format time
 const formatTime = (time: string) => {
   const [hours, minutes] = time.split(":");
   const hour = parseInt(hours, 10);
   const period = hour >= 12 ? "PM" : "AM";
-  const formattedHour = hour % 12 || 12; // Convert to 12-hour format
+  const formattedHour = hour % 12 || 12;
   return `${formattedHour}:${minutes} ${period}`;
 };
 
-// Generate dynamic metadata
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  return {
-    title: `Movie ${params.id}`,
-    description: `Details for movie with ID ${params.id}`,
-  };
-}
+export default async function MovieDetail({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  // Resolve the params promise first
+  const { id } = await params;
+  const movieId = Number.parseInt(id);
 
-export default async function MovieDetail({ params }: PageProps) {
-  const movieId = Number.parseInt(params.id);
-
-  // Fetch movie data from Supabase
+  // Fetch movie data
   const { data: movie, error: movieError } = await supabase
     .from("movies")
     .select("*")
     .eq("id", movieId)
     .single();
 
-  // Fetch theaters data from Supabase
+  // Fetch theaters data
   const { data: theaters, error: theaterError } = await supabase
     .from("theaters")
     .select("*");
 
-  // Fetch showtimes data from Supabase
+  // Fetch showtimes data
   const { data: showtimes, error: showtimeError } = await supabase
     .from("showtimes")
     .select("*")
