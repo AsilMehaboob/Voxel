@@ -1,6 +1,7 @@
-"use client"
-import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabaseClient';
+"use client";
+
+import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabaseClient";
 
 // Define TypeScript interfaces for form data
 interface MovieForm {
@@ -28,14 +29,14 @@ interface ShowtimeForm {
 // Add Movie Component
 export function AddMovieForm() {
   const [formData, setFormData] = useState<MovieForm>({
-    title: '',
-    genre: '',
-    duration: '',
-    rating: '',
-    image: '',
-    description: '',
-    director: '',
-    cast: '[]',
+    title: "",
+    genre: "",
+    duration: "",
+    rating: "",
+    image: "",
+    description: "",
+    director: "",
+    cast: "[]",
   });
 
   const [error, setError] = useState<string | null>(null);
@@ -46,24 +47,24 @@ export function AddMovieForm() {
 
     try {
       const castArray = JSON.parse(formData.cast);
-      if (!Array.isArray(castArray)) throw new Error('Cast must be a valid JSON array');
+      if (!Array.isArray(castArray)) throw new Error("Cast must be a valid JSON array");
 
-      const { error } = await supabase.from('movies').insert({
+      const { error } = await supabase.from("movies").insert({
         ...formData,
         cast: castArray,
       });
 
       if (error) throw error;
-      alert('Movie added successfully!');
+      alert("Movie added successfully!");
       setFormData({
-        title: '',
-        genre: '',
-        duration: '',
-        rating: '',
-        image: '',
-        description: '',
-        director: '',
-        cast: '[]',
+        title: "",
+        genre: "",
+        duration: "",
+        rating: "",
+        image: "",
+        description: "",
+        director: "",
+        cast: "[]",
       });
     } catch (err: any) {
       setError(err.message);
@@ -84,7 +85,7 @@ export function AddMovieForm() {
       {error && <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md">{error}</div>}
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        {(['title', 'genre', 'duration', 'rating', 'image', 'director'] as const).map((field) => (
+        {(["title", "genre", "duration", "rating", "image", "director"] as const).map((field) => (
           <div key={field}>
             <label htmlFor={field} className="block text-sm font-medium text-gray-700 mb-1">
               {field.charAt(0).toUpperCase() + field.slice(1)} *
@@ -146,8 +147,8 @@ export function AddMovieForm() {
 // Add Theater Component
 export function AddTheaterForm() {
   const [formData, setFormData] = useState<TheaterForm>({
-    name: '',
-    location: '',
+    name: "",
+    location: "",
   });
 
   const [error, setError] = useState<string | null>(null);
@@ -157,10 +158,10 @@ export function AddTheaterForm() {
     setError(null);
 
     try {
-      const { error } = await supabase.from('theaters').insert(formData);
+      const { error } = await supabase.from("theaters").insert(formData);
       if (error) throw error;
-      alert('Theater added successfully!');
-      setFormData({ name: '', location: '' });
+      alert("Theater added successfully!");
+      setFormData({ name: "", location: "" });
     } catch (err: any) {
       setError(err.message);
     }
@@ -180,7 +181,7 @@ export function AddTheaterForm() {
       {error && <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md">{error}</div>}
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        {(['name', 'location'] as const).map((field) => (
+        {(["name", "location"] as const).map((field) => (
           <div key={field}>
             <label htmlFor={field} className="block text-sm font-medium text-gray-700 mb-1">
               {field.charAt(0).toUpperCase() + field.slice(1)} *
@@ -208,12 +209,12 @@ export function AddTheaterForm() {
   );
 }
 
-// Add Showtime Component
+// Add Showtime Component (with seat generation)
 export function AddShowtimeForm() {
   const [formData, setFormData] = useState<ShowtimeForm>({
-    movie_id: '',
-    theater_id: '',
-    show_time: '',
+    movie_id: "",
+    theater_id: "",
+    show_time: "",
   });
 
   const [movies, setMovies] = useState<any[]>([]);
@@ -222,28 +223,59 @@ export function AddShowtimeForm() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const { data: movies } = await supabase.from('movies').select('*');
-      const { data: theaters } = await supabase.from('theaters').select('*');
+      const { data: movies } = await supabase.from("movies").select("*");
+      const { data: theaters } = await supabase.from("theaters").select("*");
       if (movies) setMovies(movies);
       if (theaters) setTheaters(theaters);
     };
     fetchData();
   }, []);
 
+  // Seat generation function
+  const generateSeats = async (showtimeId: number) => {
+    const rows = ["A", "B", "C", "D", "E", "F", "G", "H"];
+    const seatsPerRow = 12;
+    const seats = [];
+
+    for (const row of rows) {
+      for (let number = 1; number <= seatsPerRow; number++) {
+        seats.push({
+          id: `${showtimeId}-${row}${number}`,
+          showtime_id: showtimeId,
+          row,
+          number,
+          status: "available",
+        });
+      }
+    }
+
+    const { error } = await supabase.from("seats").insert(seats);
+    if (error) throw error;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
     try {
-      const { error } = await supabase.from('showtimes').insert({
-        movie_id: Number(formData.movie_id),
-        theater_id: Number(formData.theater_id),
-        show_time: formData.show_time,
-      });
+      // First create the showtime
+      const { data: newShowtime, error } = await supabase
+        .from("showtimes")
+        .insert({
+          movie_id: Number(formData.movie_id),
+          theater_id: Number(formData.theater_id),
+          show_time: formData.show_time,
+        })
+        .select()
+        .single();
 
       if (error) throw error;
-      alert('Showtime added successfully!');
-      setFormData({ movie_id: '', theater_id: '', show_time: '' });
+
+      // Then generate seats for the new showtime
+      await generateSeats(newShowtime.id);
+
+      alert("Showtime added successfully!");
+      setFormData({ movie_id: "", theater_id: "", show_time: "" });
     } catch (err: any) {
       setError(err.message);
     }
