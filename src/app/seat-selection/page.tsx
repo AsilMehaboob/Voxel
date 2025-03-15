@@ -1,8 +1,7 @@
 "use client";
-
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { supabase } from "@/lib/supabaseClient";
+import { createClient } from "@/utils/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -15,7 +14,7 @@ interface Seat {
 }
 
 export default function SeatSelection() {
-
+  const supabase = createClient();
   const router = useRouter();
   const searchParams = useSearchParams();
   const showtimeId = searchParams.get("showtime_id");
@@ -44,7 +43,7 @@ export default function SeatSelection() {
           .order("number", { ascending: true });
 
         if (error) throw error;
-        if (!data || data.length === 0) throw new Error("No seats found for this showtime");
+        if (!data || data.length === 0) throw new Error("No seats found");
 
         setSeats(data);
       } catch (err: any) {
@@ -55,7 +54,7 @@ export default function SeatSelection() {
     };
 
     fetchSeats();
-  }, [showtimeId]);
+  }, [showtimeId, supabase]);
 
   const handleSeatClick = (seatId: string) => {
     const seat = seats.find((s) => s.id === seatId);
@@ -67,32 +66,59 @@ export default function SeatSelection() {
   };
 
   const handleBooking = async () => {
-    if (!selectedSeats.length || !showtimeId || !movieId) return;
+    console.log("[Booking] Starting booking process...");
+    
+    if (!selectedSeats.length || !showtimeId || !movieId) {
+      console.error("Missing required parameters");
+      return;
+    }
 
     try {
-      // Check if user is logged in
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      if (authError || !user) {
+      console.log("[Auth] Checking session...");
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !session) {
+        console.warn("No active session, redirecting to login");
         router.push("/login");
         return;
       }
 
-      // Create bookings and update seats
-      const { error } = await supabase.rpc("create_booking", {
-        p_seat_ids: selectedSeats,
-        p_user_id: user.id,
-        p_showtime_id: Number(showtimeId),
-      });
+      console.log("[Seats] Updating seat statuses...");
+      const { error: seatError } = await supabase
+        .from("seats")
+        .update({ status: "booked" })
+        .in("id", selectedSeats);
 
-      if (error) throw error;
+      if (seatError) throw seatError;
 
-      // Redirect to confirmation page
+      console.log("[Bookings] Creating records...");
+      const { error: bookingError } = await supabase
+        .from("bookings")
+        .insert(selectedSeats.map(seatId => ({
+          user_id: session.user.id,
+          seat_id: seatId,
+          payment_status: "completed"
+        })));
+
+      if (bookingError) throw bookingError;
+
+      console.log("[Data] Refreshing seats...");
+      const { data: updatedSeats } = await supabase
+        .from("seats")
+        .select("*")
+        .eq("showtime_id", Number(showtimeId));
+
+      setSeats(updatedSeats || []);
+      setSelectedSeats([]);
+
       router.push(`/booking-confirmation?movie_id=${movieId}&seats=${selectedSeats.join(",")}`);
     } catch (err: any) {
-      setError(err.message || "Booking failed. Please try again.");
+      console.error("Booking error:", err);
+      setError(err.message || "Booking failed");
     }
   };
 
+  
   // Group seats by row
   const seatsByRow = seats.reduce((acc, seat) => {
     acc[seat.row] = acc[seat.row] || [];
