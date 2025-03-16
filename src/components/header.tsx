@@ -21,7 +21,7 @@ export default function Header() {
           <Link href="#" className="text-sm font-medium hover:underline">
             Theaters
           </Link>
-          <Link href="#" className="text-sm font-medium hover:underline">
+          <Link href="/mybookings" className="text-sm font-medium hover:underline">
             My Bookings
           </Link>
         </nav>
