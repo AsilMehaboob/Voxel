@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
-import jsPDF from 'jspdf';
+import jsPDF from "jspdf"
 
 interface BookingDetails {
   id: number
@@ -150,21 +150,198 @@ const MyBookings = () => {
   }
 
   const downloadTicket = (booking: BookingDetails) => {
-    const doc = new jsPDF();
+    // Create new PDF document
+    const doc = new jsPDF({
+      orientation: "portrait",
+      unit: "mm",
+      format: "a5",
+    })
 
-    doc.text(`Movie: ${booking.seat.showtime.movie.title}`, 10, 10);
-    doc.text(`Theater: ${booking.seat.showtime.theater.name}`, 10, 20);
-    doc.text(`Location: ${booking.seat.showtime.theater.location}`, 10, 30);
-    doc.text(`Seat: ${booking.seat.row}${booking.seat.number}`, 10, 40);
-    doc.text(`Show Time: ${formatDate(booking.seat.showtime.show_time)}`, 10, 50);
-    doc.text(`Booking Time: ${formatDate(booking.booking_time)}`, 10, 60);
+    // Set background color
+    doc.setFillColor(245, 247, 250)
+    doc.rect(0, 0, 210, 297, "F")
 
-    doc.save(`ticket_${booking.id}.pdf`);
-  };
+    // Add header
+    doc.setFillColor(30, 41, 59) // slate-800
+    doc.rect(0, 0, 148, 25, "F")
+
+    // Add title
+    doc.setTextColor(255, 255, 255)
+    doc.setFont("helvetica", "bold")
+    doc.setFontSize(16)
+    doc.text("MOVIE TICKET", 10, 15)
+
+    // Add booking ID as a "ticket number"
+    doc.setFontSize(10)
+    doc.text(`TICKET #${booking.id.toString().padStart(6, "0")}`, 100, 15)
+
+    // Add movie title
+    doc.setTextColor(30, 41, 59)
+    doc.setFontSize(18)
+    doc.setFont("helvetica", "bold")
+    doc.text(booking.seat.showtime.movie.title, 10, 40, { maxWidth: 128 })
+
+    // Add movie details section
+    doc.setDrawColor(200, 200, 200)
+    doc.setLineWidth(0.5)
+    doc.line(10, 45, 138, 45)
+
+    // Movie info
+    doc.setFontSize(11)
+    doc.setTextColor(60, 60, 60)
+    doc.setFont("helvetica", "normal")
+
+    // Create two columns for details
+    const leftCol = 12
+    const rightCol = 80
+    let yPos = 55
+
+    // Theater info
+    doc.setFont("helvetica", "bold")
+    doc.text("THEATER:", leftCol, yPos)
+    doc.setFont("helvetica", "normal")
+    doc.text(booking.seat.showtime.theater.name, leftCol + 25, yPos)
+    yPos += 8
+
+    // Location
+    doc.setFont("helvetica", "bold")
+    doc.text("LOCATION:", leftCol, yPos)
+    doc.setFont("helvetica", "normal")
+    doc.text(booking.seat.showtime.theater.location, leftCol + 25, yPos)
+    yPos += 8
+
+    // Date & Time
+    doc.setFont("helvetica", "bold")
+    doc.text("DATE & TIME:", leftCol, yPos)
+    doc.setFont("helvetica", "normal")
+
+    // Format date more nicely for the ticket
+    const showDate = new Date(booking.seat.showtime.show_time)
+    const dateOptions: Intl.DateTimeFormatOptions = {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    }
+    const timeOptions: Intl.DateTimeFormatOptions = {
+      hour: "2-digit",
+      minute: "2-digit",
+    }
+
+    const formattedDate = showDate.toLocaleDateString("en-US", dateOptions)
+    const formattedTime = showDate.toLocaleTimeString("en-US", timeOptions)
+
+    doc.text(formattedDate, leftCol + 25, yPos)
+    yPos += 6
+    doc.text(formattedTime, leftCol + 25, yPos)
+    yPos += 8
+
+    // Genre
+    doc.setFont("helvetica", "bold")
+    doc.text("GENRE:", leftCol, yPos)
+    doc.setFont("helvetica", "normal")
+    doc.text(booking.seat.showtime.movie.genre, leftCol + 25, yPos)
+    yPos += 8
+
+    // Duration
+    doc.setFont("helvetica", "bold")
+    doc.text("DURATION:", leftCol, yPos)
+    doc.setFont("helvetica", "normal")
+    doc.text(booking.seat.showtime.movie.duration, leftCol + 25, yPos)
+    yPos += 8
+
+    // Seat information
+    doc.setFont("helvetica", "bold")
+    doc.text("SEAT:", leftCol, yPos)
+    doc.setFont("helvetica", "normal")
+    doc.text(`${booking.seat.row}${booking.seat.number}`, leftCol + 25, yPos)
+    yPos += 15
+
+    // Add a separator
+    doc.setDrawColor(200, 200, 200)
+    doc.setLineWidth(0.5)
+    doc.line(10, yPos - 5, 138, yPos - 5)
+
+    // Add a ticket stub with tear line
+    doc.setDrawColor(150, 150, 150)
+    doc.setLineDashPattern([1, 1], 0)
+    doc.line(0, yPos + 5, 148, yPos + 5)
+
+    // Add stub content
+    yPos += 15
+    doc.setFont("helvetica", "bold")
+    doc.setFontSize(12)
+    doc.text("ADMIT ONE", 60, yPos)
+
+    yPos += 10
+    doc.setFont("helvetica", "normal")
+    doc.setFontSize(10)
+    doc.text(`Seat: ${booking.seat.row}${booking.seat.number}`, 60, yPos)
+
+    yPos += 7
+    doc.text(`Time: ${formattedTime}`, 60, yPos)
+
+    // Add a simple barcode-like graphic (for visual effect)
+    yPos += 15
+    const barcodeY = yPos
+    doc.setFillColor(0, 0, 0)
+
+    // Generate a pseudo-barcode based on booking ID
+    const barcodeStart = 30
+    const barcodeWidth = 88
+    const barcodeDigits = booking.id.toString().padStart(8, "0").split("")
+
+    barcodeDigits.forEach((digit, index) => {
+      const digitWidth = 3 + (Number.parseInt(digit) % 3)
+      const xPos = barcodeStart + index * 10
+      if (index % 2 === 0) {
+        doc.rect(xPos, barcodeY, digitWidth, 15, "F")
+      } else {
+        doc.rect(xPos, barcodeY, digitWidth, 10, "F")
+      }
+    })
+
+    // Add booking reference at the bottom
+    yPos += 25
+    doc.setFontSize(8)
+    doc.setTextColor(100, 100, 100)
+    doc.text(`Booking Reference: ${booking.id}`, 50, yPos)
+    doc.text(`Booked on: ${formatDate(booking.booking_time)}`, 50, yPos + 4)
+
+    // Add payment status
+    const statusColors: Record<string, number[]> = {
+      completed: [39, 174, 96],
+      pending: [241, 196, 15],
+      failed: [231, 76, 60],
+    }
+
+    const statusColor = statusColors[booking.payment_status] || [100, 100, 100]
+
+    doc.setFillColor(statusColor[0], statusColor[1], statusColor[2])
+    doc.circle(130, 40, 7, "F")
+    doc.setTextColor(255, 255, 255)
+    doc.setFontSize(10)
+    doc.setFont("helvetica", "bold")
+
+    // Use first letter of status as icon
+    const statusLetter = booking.payment_status.charAt(0).toUpperCase()
+    doc.text(statusLetter, 128, 43)
+
+    // Add a note at the bottom
+    yPos += 15
+    doc.setTextColor(100, 100, 100)
+    doc.setFontSize(8)
+    doc.setFont("helvetica", "italic")
+    doc.text("Please arrive 15 minutes before showtime. This ticket is non-refundable.", 30, yPos)
+
+    // Save the PDF with a descriptive filename
+    const movieTitle = booking.seat.showtime.movie.title.replace(/[^a-zA-Z0-9]/g, "")
+    doc.save(`${movieTitle}_Ticket_${booking.id}.pdf`)
+  }
 
   const viewDetails = (bookingId: number) => {
-    router.push(`/movies/${bookingId}`);
-  };
+    router.push(`/movies/${bookingId}`)
+  }
 
   if (loading) {
     return (
@@ -254,24 +431,27 @@ const MyBookings = () => {
                 <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-300">
                   <CardContent className="p-0">
                     <div className="flex flex-col md:flex-row">
-                      <div className="relative md:w-1/4 h-64 md:h-auto">
-                        <Image
-                          src={booking.seat.showtime.movie.image || "/placeholder.svg"}
-                          alt={booking.seat.showtime.movie.title}
-                          fill
-                          className="object-cover"
-                          sizes="(max-width: 768px) 100vw, 25vw"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent md:bg-gradient-to-r flex items-end md:items-center p-4">
+                      <div className="md:w-1/4">
+                        <div className="relative h-64 md:h-full">
+                          <Image
+                            src={booking.seat.showtime.movie.image || "/placeholder.svg"}
+                            alt={booking.seat.showtime.movie.title}
+                            width={300}
+                            height={450}
+                            className="w-full h-full object-cover"
+                            sizes="(max-width: 768px) 100vw, 25vw"
+                          />
+                        </div>
+                      </div>
+                      <div className="p-6 md:w-3/4">
+                        <div className="flex items-center justify-between mb-3">
+                          <h2 className="text-2xl font-bold line-clamp-1">{booking.seat.showtime.movie.title}</h2>
                           <Badge
                             className={`${getStatusColor(booking.payment_status)} border px-3 py-1 text-xs font-medium`}
                           >
                             {booking.payment_status.charAt(0).toUpperCase() + booking.payment_status.slice(1)}
                           </Badge>
                         </div>
-                      </div>
-                      <div className="p-6 md:w-3/4">
-                        <h2 className="text-2xl font-bold mb-3 line-clamp-1">{booking.seat.showtime.movie.title}</h2>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                           <div className="flex items-center gap-2">
@@ -327,3 +507,4 @@ const MyBookings = () => {
 }
 
 export default MyBookings
+
