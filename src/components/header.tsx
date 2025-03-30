@@ -15,12 +15,12 @@ export default function Header() {
           <Link href="/" className="text-sm font-medium hover:underline">
             Home
           </Link>
-          <Link href="#" className="text-sm font-medium hover:underline">
+          {/* <Link href="#" className="text-sm font-medium hover:underline">
             Movies
           </Link>
           <Link href="#" className="text-sm font-medium hover:underline">
             Theaters
-          </Link>
+          </Link> */}
           <Link href="/mybookings" className="text-sm font-medium hover:underline">
             My Bookings
           </Link>
@@ -46,12 +46,12 @@ export default function Header() {
                 <Link href="/" className="text-sm font-medium hover:underline">
                   Home
                 </Link>
-                <Link href="#" className="text-sm font-medium hover:underline">
+                {/* <Link href="#" className="text-sm font-medium hover:underline">
                   Movies
                 </Link>
                 <Link href="#" className="text-sm font-medium hover:underline">
                   Theaters
-                </Link>
+                </Link> */}
                 <Link href="#" className="text-sm font-medium hover:underline">
                   My Bookings
                 </Link>
@@ -60,7 +60,7 @@ export default function Header() {
                   Account
                 </Button>
                 <Button variant="outline" className="justify-start">
-                  <LogOut className="h-4 w-4 mr-2" />
+                  <LogOut onClick={logout} className="h-4 w-4 mr-2" />
                   Log out
                 </Button>
               </nav>
