@@ -55,10 +55,14 @@ export default function Header() {
                 <Link href="#" className="text-sm font-medium hover:underline">
                   My Bookings
                 </Link>
-                <Button variant="outline" className="justify-start">
-                  <User className="h-4 w-4 mr-2" />
-                  Account
-                </Button>
+                <Link href="/account">
+  <a>
+    <Button variant="outline" size="icon" className="hidden md:flex">
+      <User className="h-4 w-4" />
+    </Button>
+  </a>
+</Link>
+
                 <Button variant="outline" className="justify-start">
                   <LogOut onClick={logout} className="h-4 w-4 mr-2" />
                   Log out
