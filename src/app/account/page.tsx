@@ -18,12 +18,33 @@ export default function AccountPage() {
         console.error("Error fetching user:", error);
       } else {
         setUser({
-          email: data.user?.email || null,
-          name: data.user?.user_metadata?.name || "User",
+          email: data.user?.email || null, // Ensure null instead of undefined
+          name: data.user?.user_metadata?.name || "User", // Default name if not available
         });
       }
     }
+
+    // Fetch user when the page loads
     fetchUser();
+
+    // Listen for auth state changes
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session?.user) {
+        // Update user data when authentication state changes
+        setUser({
+          email: session.user.email ||null,
+          name: session.user.user_metadata?.name || "User",
+        });
+      } else {
+        // Handle logged-out state
+        setUser({ email: null, name: null });
+      }
+    });
+
+    // Cleanup on unmount
+    return () => {
+      authListener?.subscription.unsubscribe(); // Correct way to unsubscribe
+    };
   }, []);
 
   return (
@@ -35,10 +56,7 @@ export default function AccountPage() {
 
         <div className="mt-6 flex flex-col gap-4">
           <Link href="/mybookings">
-            <Button  className="w-full">View Booking History</Button>
-          </Link>
-          <Link href="/account/edit">
-            <Button variant="secondary" className="w-full">Edit Profile</Button>
+            <Button className="w-full">View Booking History</Button>
           </Link>
         </div>
       </div>

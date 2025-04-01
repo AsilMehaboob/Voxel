@@ -1,3 +1,4 @@
+"use client";
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { LogOut, Menu, User } from "lucide-react"
@@ -26,10 +27,23 @@ export default function Header() {
           </Link>
         </nav>
         <div className="flex items-center gap-4">
-          <Button variant="outline" size="icon" className="hidden md:flex">
-            <User className="h-4 w-4" />
-            <span className="sr-only">User account</span>
-          </Button>
+        <Link href="/account" passHref>
+  <Button 
+    variant="outline" 
+    size="icon" 
+    className="hidden md:flex"
+    onClick={(e) => {
+      e.preventDefault(); // Prevent Next.js from overriding navigation
+      console.log("User clicked");
+      window.location.href = "/account"; // Force navigation manually
+    }}
+  >
+    <User className="h-4 w-4" />
+    <span className="sr-only">User account</span>
+  </Button>
+</Link>
+
+
           <Button variant="outline" size="icon" className="hidden md:flex" onClick={logout} >
             <LogOut className="h-4 w-4" />
             <span className="sr-only">Log out</span>
